@@ -4,6 +4,7 @@ import About from "./components/About";
 import NavBar from "./components/NavBar";
 import Features from "./components/Features";
 import Story from "./components/Story";
+import Gallery from "./components/Gallery";
 import Contact from "./components/Contact";
 import Footer from "./components/Footer";
 
@@ -15,6 +16,7 @@ const App = () => {
       <About />
       <Features />
       <Story />
+      <Gallery />
       <Contact />
       <Footer />
     </main>
