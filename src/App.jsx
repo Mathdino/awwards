@@ -7,19 +7,23 @@ import Story from "./components/Story";
 import Gallery from "./components/Gallery";
 import Contact from "./components/Contact";
 import Footer from "./components/Footer";
+import Cursor from "./components/Cursor";
 
 const App = () => {
   return (
-    <main className="relative min-h-screen w-screen overflow-x-hidden">
-      <NavBar />
-      <Hero />
-      <About />
-      <Features />
-      <Story />
-      <Gallery />
-      <Contact />
-      <Footer />
-    </main>
+    <>
+      <Cursor />
+      <main className="relative min-h-screen w-screen overflow-x-hidden">
+        <NavBar />
+        <Hero />
+        <About />
+        <Features />
+        <Story />
+        <Gallery />
+        <Contact />
+        <Footer />
+      </main>
+    </>
   );
 };
 

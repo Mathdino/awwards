@@ -5,221 +5,189 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 const GALLERY = [
-  { src: "/img/gallery-1.webp", rotation: -11, label: "Chapter I",   z: 2 },
-  { src: "/img/gallery-2.webp", rotation:   7, label: "Chapter II",  z: 4 },
-  { src: "/img/gallery-3.webp", rotation:  -3, label: "Chapter III", z: 5 },
-  { src: "/img/gallery-4.webp", rotation:   9, label: "Chapter IV",  z: 3 },
-  { src: "/img/gallery-5.webp", rotation:  -6, label: "Chapter V",   z: 1 },
+  { src: "/img/gallery-1.webp", label: "Chapter I",   rotation: -11, z: 5 },
+  { src: "/img/gallery-2.webp", label: "Chapter II",  rotation:   7, z: 4 },
+  { src: "/img/gallery-3.webp", label: "Chapter III", rotation:  -3, z: 3 },
+  { src: "/img/gallery-4.webp", label: "Chapter IV",  rotation:   9, z: 2 },
+  { src: "/img/gallery-5.webp", label: "Chapter V",   rotation:  -6, z: 1 },
 ];
 
-// posições finais de cada card (scattered layout)
-const POSITIONS = [
-  { left: "1%",  top: "12%" },
-  { left: "20%", top: "46%" },
-  { left: "38%", top: "8%"  },
-  { left: "57%", top: "42%" },
-  { left: "75%", top: "10%" },
-];
-
-// origens off-screen de cada card (de onde eles voam)
-const ORIGINS = [
-  { x: -900, y: -500, rot: -60 },
-  { x: -700, y:  700, rot:  50 },
-  { x:    0, y: -800, rot: -40 },
-  { x:  800, y:  600, rot:  55 },
-  { x: 1000, y: -500, rot: -50 },
+// posição final de cada card (offset do centro, em px)
+const SPREAD = [
+  { x: -430, y: -50 },
+  { x: -205, y:  95 },
+  { x:    5, y: -60 },
+  { x:  215, y:  90 },
+  { x:  430, y: -45 },
 ];
 
 const Gallery = () => {
   const sectionRef  = useRef(null);
-  const cardsRef    = useRef([]);
+  const wrapperRefs = useRef([]); // parallax / spread
+  const cardRefs    = useRef([]); // hover
   const titleRef    = useRef(null);
-  const lineRef     = useRef(null);
   const subtitleRef = useRef(null);
-  const floatRef    = useRef([]);
+  const hintRef     = useRef(null);
+  const isDealt     = useRef(false);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // ── Linha decorativa que expande ──────────────────────────────
-      gsap.fromTo(
-        lineRef.current,
-        { scaleX: 0 },
-        {
-          scaleX: 1,
-          duration: 1.2,
-          ease: "power3.inOut",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 80%" },
-        }
-      );
 
-      // ── Título entra de baixo ──────────────────────────────────────
-      gsap.fromTo(
-        titleRef.current,
-        { y: 100, opacity: 0 },
-        {
+      // ─── Estado inicial ──────────────────────────────────────────
+      gsap.set(titleRef.current,    { autoAlpha: 0, y: -50 });
+      gsap.set(subtitleRef.current, { autoAlpha: 0, y:  20 });
+      gsap.set(hintRef.current,     { autoAlpha: 0.4 });
+
+      wrapperRefs.current.forEach((w, i) => {
+        // Todos os wrappers começam no centro com pequena rotação empilhada
+        gsap.set(w, {
+          xPercent: -50,
+          yPercent: -50,
+          x: 0,
           y: 0,
-          opacity: 1,
-          duration: 1.1,
-          ease: "power4.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 78%" },
-        }
-      );
+          rotation: (i - 2) * 5,
+          zIndex: GALLERY.length - i,
+        });
+      });
 
-      gsap.fromTo(
-        subtitleRef.current,
-        { y: 40, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.9,
-          delay: 0.25,
-          ease: "power3.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 78%" },
-        }
-      );
-
-      // ── Cards voam dos cantos e pousam ────────────────────────────
-      cardsRef.current.forEach((card, i) => {
-        gsap.fromTo(
-          card,
-          {
-            x: ORIGINS[i].x,
-            y: ORIGINS[i].y,
-            rotation: ORIGINS[i].rot,
-            scale: 0.3,
-            opacity: 0,
+      // ─── Timeline scrubada pela rolagem (efeito de distribuir cartas) ──
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top top",
+          end: "+=1000",
+          pin: true,
+          scrub: 1.8,
+          anticipatePin: 1,
+          onUpdate: (self) => {
+            isDealt.current = self.progress > 0.88;
           },
+        },
+      });
+
+      // Título aparece no início
+      tl.to(titleRef.current,    { autoAlpha: 1, y: 0, duration: 0.25 }, 0);
+      tl.to(subtitleRef.current, { autoAlpha: 1, y: 0, duration: 0.25 }, 0.08);
+      tl.to(hintRef.current,     { autoAlpha: 0, duration: 0.1 }, 0);
+
+      // Cartas se distribuem com stagger
+      SPREAD.forEach((target, i) => {
+        tl.to(
+          wrapperRefs.current[i],
           {
-            x: 0,
-            y: 0,
+            x: target.x,
+            y: target.y,
             rotation: GALLERY[i].rotation,
-            scale: 1,
-            opacity: 1,
-            duration: 1.6,
-            delay: i * 0.13,
-            ease: "back.out(1.3)",
-            scrollTrigger: { trigger: sectionRef.current, start: "top 65%" },
-            onComplete: () => startFloat(i),
-          }
+            zIndex: GALLERY[i].z,
+            duration: 0.55,
+            ease: "power3.out",
+          },
+          0.1 + i * 0.09
         );
       });
+
+      // Leve "respiro" final para assentar as cartas
+      tl.to(wrapperRefs.current, { y: "+=8", duration: 0.08, yoyo: true, repeat: 1 }, 0.85);
+
     }, sectionRef);
 
     return () => ctx.revert();
   }, []);
 
-  // Float contínuo após a entrada
-  const startFloat = (i) => {
-    const card = cardsRef.current[i];
-    if (!card) return;
-    floatRef.current[i] = gsap.to(card, {
-      y: (i % 2 === 0 ? 14 : -14),
-      duration: 2.2 + i * 0.35,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut",
-      overwrite: false,
-    });
-  };
-
+  // ─── Hover (só quando as cartas estão distribuídas) ─────────────
   const onEnter = (i) => {
-    // Para o float e levanta o card
-    if (floatRef.current[i]) floatRef.current[i].pause();
-    gsap.to(cardsRef.current[i], {
-      y: -28,
-      scale: 1.08,
-      rotation: 0,
-      duration: 0.4,
+    if (!isDealt.current) return;
+    gsap.to(cardRefs.current[i], {
+      y: -24,
+      scale: 1.09,
+      rotation: -GALLERY[i].rotation, // contra-rotação p/ endireitar
+      duration: 0.35,
       ease: "power3.out",
       overwrite: "auto",
     });
   };
 
   const onLeave = (i) => {
-    // Volta com bounce elástico e retoma o float
-    gsap.to(cardsRef.current[i], {
+    if (!isDealt.current) return;
+    gsap.to(cardRefs.current[i], {
       y: 0,
       scale: 1,
-      rotation: GALLERY[i].rotation,
-      duration: 0.6,
-      ease: "elastic.out(1, 0.55)",
+      rotation: 0,
+      duration: 0.55,
+      ease: "elastic.out(1, 0.5)",
       overwrite: "auto",
-      onComplete: () => {
-        if (floatRef.current[i]) floatRef.current[i].restart();
-      },
     });
   };
 
   return (
     <section
       ref={sectionRef}
-      className="relative overflow-hidden bg-[#dfdff0] py-28"
+      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#dfdff0]"
     >
-      {/* Blobs decorativos de fundo */}
+
+      {/* ── Blobs de fundo ─────────────────────────────────────────── */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute left-1/4 top-1/3 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-300/30 blur-3xl" />
-        <div className="absolute right-1/4 top-2/3 h-80 w-80 rounded-full bg-blue-300/25 blur-3xl" />
-        <div className="absolute bottom-10 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-indigo-200/30 blur-2xl" />
+        <div className="absolute left-1/4 top-1/3  h-[30rem] w-[30rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-300/30 blur-3xl" />
+        <div className="absolute right-1/4 bottom-1/4 h-72 w-72 rounded-full bg-blue-300/25 blur-3xl" />
+        <div className="absolute bottom-10 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-indigo-200/25 blur-2xl" />
       </div>
 
-      {/* Cabeçalho */}
-      <div className="relative z-10 mb-20 text-center">
-        {/* Linha decorativa */}
-        <div
-          ref={lineRef}
-          className="mx-auto mb-6 h-px w-40 origin-center bg-black/20"
-        />
-
-        <div ref={titleRef} className="overflow-hidden">
-          <h2 className="special-font font-zentry text-[clamp(4rem,10vw,9rem)] font-black uppercase leading-none text-black">
+      {/* ── Cabeçalho ──────────────────────────────────────────────── */}
+      <div className="relative z-10 mb-4 text-center">
+        <div ref={titleRef}>
+          <h2 className="special-font font-zentry text-[clamp(3.5rem,9vw,8.5rem)] font-black uppercase leading-none text-black">
             Gal<b>l</b>ery
           </h2>
         </div>
-
-        <p
-          ref={subtitleRef}
-          className="mt-3 font-general text-[10px] uppercase tracking-[0.3em] text-black/40"
-        >
+        <p ref={subtitleRef} className="mt-2 font-general text-[10px] uppercase tracking-[0.35em] text-black/40">
           Visual chronicles of the world
         </p>
       </div>
 
-      {/* Cards espalhados */}
-      <div className="relative mx-auto h-[520px] max-w-6xl px-6">
+      {/* ── Área das cartas ────────────────────────────────────────── */}
+      <div className="relative h-[340px] w-full">
         {GALLERY.map((item, i) => (
+          // wrapper: controlado pelo scrub (spread / rotação final)
           <div
             key={i}
-            ref={(el) => (cardsRef.current[i] = el)}
-            onMouseEnter={() => onEnter(i)}
-            onMouseLeave={() => onLeave(i)}
-            className="absolute cursor-pointer bg-white p-[10px] pb-10"
-            style={{
-              ...POSITIONS[i],
-              transform: `rotate(${item.rotation}deg)`,
-              zIndex: item.z,
-              width: "200px",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10)",
-            }}
+            ref={(el) => (wrapperRefs.current[i] = el)}
+            className="absolute left-1/2 top-1/2"
+            style={{ zIndex: item.z }}
           >
-            <img
-              src={item.src}
-              alt={`gallery ${i + 1}`}
-              className="h-52 w-full object-cover"
-              draggable={false}
-            />
-            {/* Legenda estilo polaroid */}
-            <p className="mt-[10px] text-center font-general text-[9px] uppercase tracking-[0.25em] text-black/50">
-              {item.label}
-            </p>
+            {/* card: controlado pelo hover */}
+            <div
+              ref={(el) => (cardRefs.current[i] = el)}
+              onMouseEnter={() => onEnter(i)}
+              onMouseLeave={() => onLeave(i)}
+              className="cursor-pointer bg-white p-[10px] pb-10"
+              style={{
+                width: "195px",
+                boxShadow: "0 14px 45px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.09)",
+              }}
+            >
+              <img
+                src={item.src}
+                alt={`gallery ${i + 1}`}
+                className="h-52 w-full object-cover"
+                draggable={false}
+              />
+              <p className="mt-[10px] text-center font-general text-[9px] uppercase tracking-[0.25em] text-black/45">
+                {item.label}
+              </p>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Linha decorativa inferior */}
+      {/* ── Hint de scroll ─────────────────────────────────────────── */}
       <div
-        className="mx-auto mt-16 h-px w-40 origin-center bg-black/20"
-        style={{ transform: "scaleX(1)" }}
-      />
+        ref={hintRef}
+        className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2"
+      >
+        <p className="font-general text-[9px] uppercase tracking-[0.3em] text-black/50">scroll</p>
+        <div className="h-8 w-px animate-pulse bg-black/40" />
+      </div>
+
     </section>
   );
 };
