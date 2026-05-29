@@ -1,0 +1,30 @@
+@import url("https://fonts.cdnfonts.com/css/general-sans");
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/*
+  Tailwind v4 não suporta @apply de classes definidas em @layer utilities.
+  As duas classes abaixo são usadas com @apply dentro de index.css,
+  por isso precisam ser registradas aqui como @utility antes do @import.
+*/
+
+@utility special-font {
+  & b {
+    font-family: "Zentry";
+    font-feature-settings: "ss01" on;
+  }
+}
+
+@utility border-hsla {
+  @apply border border-white/20;
+}
+
+@utility bento-tilt_1 {
+  @apply relative border-hsla col-span-2 overflow-hidden rounded-md transition-transform duration-300 ease-out;
+}
+
+@utility bento-tilt_2 {
+  @apply relative col-span-1 row-span-1 overflow-hidden rounded-md transition-transform duration-300 ease-out;
+}
+
+@import "./index.css";
